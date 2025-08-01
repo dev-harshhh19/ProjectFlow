@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, Loader2, UserPlus } from 'lucide-react';
 import EmailVerificationAlert from './ui/EmailVerificationAlert';
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:4000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
 function Register() {
   const { 
@@ -56,10 +56,18 @@ function Register() {
       // Show email verification alert instead of immediately navigating
       setRegisteredEmail(data.email);
       setShowEmailAlert(true);
+      // Reset form after successful registration
+      reset();
 
     } catch (error) {
       setSubmitError(error.message);
     }
+  };
+
+  const handleFormReset = () => {
+    reset();
+    setSubmitError(null);
+    setShowEmailAlert(false);
   };
 
   const handleAlertClose = () => {
@@ -275,6 +283,12 @@ function Register() {
                 {errors.privacy.message}
               </div>
             )}
+            {watchedPrivacy && (
+              <div className="flex items-center text-green-600 text-sm mt-1">
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Terms and conditions accepted
+              </div>
+            )}
           </div>
 
           {/* Submit Error */}
@@ -307,6 +321,20 @@ function Register() {
               </>
             )}
           </button>
+          
+          {/* Clear Form Button */}
+          {(watchedName || watchedEmail || watchedPassword || watchedConfirmPassword || watchedPrivacy) && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleFormReset}
+                className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors underline"
+              >
+                Clear Form
+              </button>
+            </div>
+          )}
+          
           <div className="text-center">
             <Link to="/login" className="text-blue-600 hover:text-blue-700 text-sm">
               Already have an account? Sign In

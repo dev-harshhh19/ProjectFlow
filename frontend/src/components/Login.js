@@ -48,7 +48,16 @@ function Login() {
       await login(data.email, data.password);
     } catch (error) {
       setSubmitError(error.message);
+      // Focus back to email field on error for better UX
+      setFocus('email');
     }
+  };
+
+  const handleFormReset = () => {
+    reset();
+    setSubmitError(null);
+    setSuccessMessage(null);
+    setFocus('email');
   };
 
   return (
@@ -203,6 +212,19 @@ function Login() {
               <span>Sign In</span>
             )}
           </button>
+
+          {/* Clear Form Button */}
+          {(watchedEmail || watchedPassword) && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleFormReset}
+                className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors underline"
+              >
+                Clear Form
+              </button>
+            </div>
+          )}
 
           {/* Forgot Password & Register Links */}
           <div className="space-y-4 text-center">

@@ -73,3 +73,6 @@ ssl/
 
 # Prisma
 /generated/prisma
+
+.example.env
+.SETUP.md

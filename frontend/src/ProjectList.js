@@ -34,7 +34,6 @@ function ProjectList({ projects, onProjectClick, onDeleteProject, onEditProject,
           key={project.id}
           className="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-700 p-6 cursor-pointer transition-all duration-200 hover:-translate-y-1"
           onClick={() => {
-            console.log('ProjectList - Clicking project with ID:', project.id, 'Type:', typeof project.id);
             onProjectClick(project.id);
           }}
         >

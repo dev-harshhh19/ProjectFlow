@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
+import Logger from '../utils/logger';
 
 const AuthContext = createContext(null);
 
@@ -24,7 +25,7 @@ export const AuthProvider = ({ children }) => {
   const deleteAccount = async () => {
     // For now, we'll just logout the user since Supabase client API doesn't allow user deletion
     // In a real implementation, you'd call your backend API to schedule deletion
-    console.log('Account deletion scheduled');
+    Logger.info('Account deletion scheduled');
     await logout();
   };
 
@@ -33,7 +34,8 @@ export const AuthProvider = ({ children }) => {
     const existingToken = localStorage.getItem('jwtToken');
     if (existingToken) {
       // Validate the session token with our backend
-      fetch('http://localhost:4000/api/projects', {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+      fetch(`${apiUrl}/api/projects`, {
         headers: {
           'Authorization': `Bearer ${existingToken}`,
           'Content-Type': 'application/json'
@@ -55,7 +57,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       })
       .catch(error => {
-        console.warn('Session validation failed:', error.message);
+        Logger.warn('Session validation failed:', error.message);
         localStorage.removeItem('jwtToken');
         setUser(null);
         setToken(null);
@@ -71,7 +73,8 @@ export const AuthProvider = ({ children }) => {
     
     try {
       // Use our backend login endpoint instead of direct Supabase
-      const response = await fetch('http://localhost:4000/api/login', {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+      const response = await fetch(`${apiUrl}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -107,7 +110,8 @@ export const AuthProvider = ({ children }) => {
       const currentToken = localStorage.getItem('jwtToken');
       if (currentToken) {
         try {
-          await fetch('http://localhost:4000/api/logout', {
+          const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+          await fetch(`${apiUrl}/api/logout`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${currentToken}`,
@@ -115,7 +119,7 @@ export const AuthProvider = ({ children }) => {
             }
           });
         } catch (backendError) {
-          console.warn('Backend logout failed:', backendError.message);
+          Logger.warn('Backend logout failed:', backendError.message);
           // Continue with local cleanup even if backend fails
         }
       }
@@ -124,11 +128,11 @@ export const AuthProvider = ({ children }) => {
       try {
         await supabase.auth.signOut();
       } catch (supabaseError) {
-        console.warn('Supabase logout failed:', supabaseError.message);
+        Logger.warn('Supabase logout failed:', supabaseError.message);
         // Continue with local cleanup even if Supabase fails
       }
     } catch (error) {
-      console.warn('Logout process encountered issues:', error.message);
+      Logger.warn('Logout process encountered issues:', error.message);
       // Continue with local cleanup regardless of errors
     }
     

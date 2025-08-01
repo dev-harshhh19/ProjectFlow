@@ -23,7 +23,10 @@
     }
   ],
   "env": {
-    "REACT_APP_ENV": "production"
+    "REACT_APP_ENV": "production",
+    "REACT_APP_API_URL": "https://your-backend-app.onrender.com",
+    "REACT_APP_SUPABASE_URL": "@supabase_url",
+    "REACT_APP_SUPABASE_ANON_KEY": "@supabase_anon_key"
   },
   "functions": {
     "app/server.js": {

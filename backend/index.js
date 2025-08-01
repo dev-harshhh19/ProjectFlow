@@ -96,9 +96,57 @@ app.use(express.urlencoded({
   parameterLimit: 1000000
 }));
 
-// Health check
+// Health check endpoints
 app.get('/', (req, res) => {
-  res.send('API is running');
+  res.json({ 
+    message: 'TaskFlow API is running',
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
+});
+
+app.get('/api/health', async (req, res) => {
+  const health = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    checks: {}
+  };
+  
+  // Check database connection
+  try {
+    await pool.query('SELECT 1');
+    health.checks.database = { status: 'healthy', message: 'Connected' };
+  } catch (error) {
+    health.checks.database = { status: 'unhealthy', message: error.message };
+    health.status = 'unhealthy';
+  }
+  
+  // Check Supabase connection
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.from('projects').select('count').limit(1);
+      health.checks.supabase = { status: 'healthy', message: 'Connected' };
+    } catch (error) {
+      health.checks.supabase = { status: 'unhealthy', message: error.message };
+    }
+  } else {
+    health.checks.supabase = { status: 'disabled', message: 'Supabase not configured' };
+  }
+  
+  // Check memory usage
+  const memUsage = process.memoryUsage();
+  health.checks.memory = {
+    status: 'healthy',
+    usage: {
+      rss: Math.round(memUsage.rss / 1024 / 1024) + ' MB',
+      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + ' MB',
+      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + ' MB'
+    }
+  };
+  
+  const statusCode = health.status === 'healthy' ? 200 : 503;
+  res.status(statusCode).json(health);
 });
 
 // Connection test endpoint (no auth required)

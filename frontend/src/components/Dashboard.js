@@ -6,9 +6,11 @@ import NewProjectModal from '../NewProjectModal';
 import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 import Footer from './Footer';
+import Logger from '../utils/logger';
+import LoadingSpinner from './ui/LoadingSpinner';
 
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:4000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
 function Dashboard() {
   const [projects, setProjects] = useState([]);
@@ -23,25 +25,25 @@ function Dashboard() {
 
   // Test backend connection first
   useEffect(() => {
-    console.log('Dashboard - Testing backend connection...');
+    Logger.debug('Dashboard - Testing backend connection...');
     fetch(`${API_BASE_URL}/api/test`)
       .then(res => res.json())
       .then(data => {
-        console.log('Backend connection test successful:', data);
+        Logger.debug('Backend connection test successful:', data);
       })
       .catch(err => {
-        console.error('Backend connection test failed:', err);
+        Logger.error('Backend connection test failed:', err);
       });
   }, []);
 
   // Fetch projects from backend
   useEffect(() => {
     if (!token) {
-      console.log('Dashboard - No token available, skipping project fetch');
+      Logger.info('Dashboard - No token available, skipping project fetch');
       return; // Don't fetch if not authenticated
     }
 
-    console.log('Dashboard - Token available, fetching projects...');
+    Logger.debug('Dashboard - Token available, fetching projects...');
     setLoading(true);
     setError(null);
     
@@ -52,8 +54,8 @@ function Dashboard() {
       },
     })
       .then(res => {
-        console.log('Dashboard - Response status:', res.status);
-        console.log('Dashboard - Response headers:', res.headers);
+        Logger.debug('Dashboard - Response status:', res.status);
+        Logger.debug('Dashboard - Response headers:', res.headers);
         
         if (!res.ok) {
           if (res.status === 401) {
@@ -67,13 +69,13 @@ function Dashboard() {
         return res.json();
       })
       .then(data => {
-        console.log('Dashboard - Fetched projects successfully:', data);
-        console.log('Dashboard - First project:', data[0]);
+        Logger.info('Dashboard - Fetched projects successfully:', data);
+        Logger.debug('Dashboard - First project:', data[0]);
         setProjects(data);
         setLoading(false);
       })
       .catch(err => {
-        console.error('Dashboard - Error fetching projects:', err);
+        Logger.error('Dashboard - Error fetching projects:', err);
         setError(err.message || 'Failed to connect to server. Please check your connection.');
         setLoading(false);
       });
@@ -171,7 +173,7 @@ function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg text-blue-600 font-semibold">Loading projects...</div>
+        <LoadingSpinner size="large" text="Loading projects..." />
       </div>
     );
   }

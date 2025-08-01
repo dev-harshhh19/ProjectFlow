@@ -11,13 +11,14 @@ services:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 4000
-      # Add your environment variables here:
-      # - key: DATABASE_URL
-      #   sync: false
-      # - key: SUPABASE_URL
-      #   sync: false
-      # - key: SUPABASE_SERVICE_ROLE_KEY
-      #   sync: false
-      # - key: JWT_SECRET
-      #   sync: false
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false

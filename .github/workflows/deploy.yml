@@ -1,4 +1,4 @@
-name: Deploy Project Management App
+name: Deploy to Render and Vercel
 
 on:
   push:
@@ -68,7 +68,7 @@ jobs:
         CI=true npm test -- --coverage --watchAll=false
 
   deploy-backend:
-    name: Deploy Backend to Heroku
+    name: Deploy Backend to Render
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -77,29 +77,20 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Deploy Backend to Heroku
-      uses: akhileshns/heroku-deploy@v3.13.15
+    - name: Deploy to Render
+      uses: johnbeynon/render-deploy-action@v0.0.8
       with:
-        heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-        heroku_app_name: ${{ secrets.HEROKU_APP_NAME_BACKEND }}
-        heroku_email: ${{ secrets.HEROKU_EMAIL }}
-        appdir: "backend"
-        usedocker: false
-        env_file: ".env.production"
+        service-id: ${{ secrets.RENDER_SERVICE_ID }}
+        api-key: ${{ secrets.RENDER_API_KEY }}
     
-    - name: Set Heroku Config Vars
+    - name: Wait for deployment
       run: |
-        # Install Heroku CLI
-        curl https://cli-assets.heroku.com/install.sh | sh
-        
-        # Set environment variables
-        echo "${{ secrets.HEROKU_API_KEY }}" | heroku auth:token
-        heroku config:set DATABASE_URL="${{ secrets.DATABASE_URL }}" --app ${{ secrets.HEROKU_APP_NAME_BACKEND }}
-        heroku config:set NODE_ENV=production --app ${{ secrets.HEROKU_APP_NAME_BACKEND }}
-        heroku config:set FRONTEND_URL="${{ secrets.FRONTEND_URL }}" --app ${{ secrets.HEROKU_APP_NAME_BACKEND }}
+        echo "⏳ Waiting for Render deployment to complete..."
+        sleep 60
+        echo "✅ Backend deployment initiated"
 
   deploy-frontend:
-    name: Deploy Frontend to Heroku
+    name: Deploy Frontend to Vercel
     needs: [test, deploy-backend]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -108,34 +99,31 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Setup Node.js for build
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
     
-    - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm ci
+    - name: Install Vercel CLI
+      run: npm install --global vercel@latest
     
-    - name: Build frontend with production API URL
+    - name: Pull Vercel Environment Information
+      run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      working-directory: frontend
+    
+    - name: Build Project Artifacts
+      run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      working-directory: frontend
       env:
-        REACT_APP_API_URL: https://${{ secrets.HEROKU_APP_NAME_BACKEND }}.herokuapp.com
-        GENERATE_SOURCEMAP: false
-      run: |
-        cd frontend
-        npm run build
+        REACT_APP_API_URL: ${{ secrets.RENDER_BACKEND_URL }}
+        REACT_APP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     
-    - name: Deploy Frontend to Heroku
-      uses: akhileshns/heroku-deploy@v3.13.15
-      with:
-        heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-        heroku_app_name: ${{ secrets.HEROKU_APP_NAME_FRONTEND }}
-        heroku_email: ${{ secrets.HEROKU_EMAIL }}
-        appdir: "frontend"
-        usedocker: false
+    - name: Deploy Project Artifacts to Vercel
+      run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+      working-directory: frontend
 
   notify:
     name: Notify Deployment Status
@@ -148,8 +136,8 @@ jobs:
       if: needs.deploy-backend.result == 'success' && needs.deploy-frontend.result == 'success'
       run: |
         echo "🎉 Deployment successful!"
-        echo "Backend: https://${{ secrets.HEROKU_APP_NAME_BACKEND }}.herokuapp.com"
-        echo "Frontend: https://${{ secrets.HEROKU_APP_NAME_FRONTEND }}.herokuapp.com"
+        echo "Backend: ${{ secrets.RENDER_BACKEND_URL }}"
+        echo "Frontend: ${{ secrets.VERCEL_FRONTEND_URL }}"
     
     - name: Deployment Failed
       if: needs.deploy-backend.result == 'failure' || needs.deploy-frontend.result == 'failure'
@@ -158,10 +146,19 @@ jobs:
         echo "Check the logs above for details."
         exit 1
 
-# Required GitHub Secrets:
+# Required GitHub Secrets for Render + Vercel:
+# Database & Authentication:
 # - DATABASE_URL: Complete PostgreSQL connection string
-# - HEROKU_API_KEY: Your Heroku API key
-# - HEROKU_APP_NAME_BACKEND: Name of your backend Heroku app
-# - HEROKU_APP_NAME_FRONTEND: Name of your frontend Heroku app  
-# - HEROKU_EMAIL: Your Heroku account email
-# - FRONTEND_URL: URL of your deployed frontend
+# - SUPABASE_URL: https://your-project-id.supabase.co
+# - SUPABASE_ANON_KEY: Your Supabase anon/public key
+# - SUPABASE_SERVICE_ROLE_KEY: Your Supabase service role key
+# - JWT_SECRET: Your JWT secret key
+#
+# Render (Backend):
+# - RENDER_API_KEY: Your Render API key
+# - RENDER_SERVICE_ID: Your Render service ID
+# - RENDER_BACKEND_URL: https://your-backend-app.onrender.com
+#
+# Vercel (Frontend):
+# - VERCEL_TOKEN: Your Vercel API token
+# - VERCEL_FRONTEND_URL: https://your-frontend-app.vercel.app

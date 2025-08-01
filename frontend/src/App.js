@@ -1,22 +1,28 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import Dashboard from './components/Dashboard';
-import ProjectDetails from './components/ProjectDetails';
-import Landing from './components/Landing';
-import PrivacyPolicy from './components/PrivacyPolicy';
-import TermsOfService from './components/TermsOfService';
-import CookiePolicy from './components/CookiePolicy';
-import UserAgreement from './components/UserAgreement';
-import Support from './components/Support';
-import Features from './components/Features';
-import Login from './components/Login';
-import Register from './components/Register';
-import Profile from './components/Profile';
-import Feedback from './components/Feedback';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
+import LoadingSpinner from './components/ui/LoadingSpinner';
+
+// Lazy load components for better performance
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const ProjectDetails = lazy(() => import('./components/ProjectDetails'));
+const Landing = lazy(() => import('./components/Landing'));
+const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./components/TermsOfService'));
+const CookiePolicy = lazy(() => import('./components/CookiePolicy'));
+const UserAgreement = lazy(() => import('./components/UserAgreement'));
+const Support = lazy(() => import('./components/Support'));
+const Features = lazy(() => import('./components/Features'));
+const Login = lazy(() => import('./components/Login'));
+const Register = lazy(() => import('./components/Register'));
+const ForgotPassword = lazy(() => import('./components/ForgotPassword'));
+const Profile = lazy(() => import('./components/Profile'));
+const Feedback = lazy(() => import('./components/Feedback'));
+const NotFound = lazy(() => import('./components/NotFound'));
 
 // Inner component that uses auth context
 function AppContent() {
@@ -79,6 +85,23 @@ function AppContent() {
                   transition={{ duration: 0.25, ease: 'easeInOut' }}
                 >
                   <Register />
+                </motion.div>
+              </AnimatePresence>
+            }
+          />
+          
+          <Route
+            path="/forgot-password"
+            element={
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key="forgot-password"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                >
+                  <ForgotPassword />
                 </motion.div>
               </AnimatePresence>
             }
@@ -266,6 +289,22 @@ function AppContent() {
               </AnimatePresence>
             }
           />
+          <Route
+            path="*"
+            element={
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key="not-found"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                >
+                  <NotFound />
+                </motion.div>
+              </AnimatePresence>
+            }
+          />
         </Routes>
   );
 }
@@ -275,7 +314,15 @@ function App() {
     <Router>
       <AuthProvider>
         <ThemeProvider>
-          <AppContent />
+          <ErrorBoundary>
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner size="large" text="Loading..." />
+              </div>
+            }>
+              <AppContent />
+            </Suspense>
+          </ErrorBoundary>
         </ThemeProvider>
       </AuthProvider>
     </Router>

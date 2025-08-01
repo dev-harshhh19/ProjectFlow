@@ -185,18 +185,31 @@ function Profile() {
                 {getActivityStatusText(profileData.activityStatus)}
               </span>
             </div>
-            <button
-              onClick={() => {
-                setIsEditing(!isEditing);
-                setMessage({ type: '', text: '' });
-              }}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md font-semibold transition-colors ${
-                isEditing ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'
-              }`}
-            >
-              {isEditing ? <CancelIcon size={16} /> : <EditIcon size={16} />}
-              <span>{isEditing ? 'Cancel' : 'Edit Profile'}</span>
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setIsEditing(!isEditing);
+                  setMessage({ type: '', text: '' });
+                }}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-md font-semibold transition-colors ${
+                  isEditing ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
+              >
+                {isEditing ? <CancelIcon size={16} /> : <EditIcon size={16} />}
+                <span>{isEditing ? 'Cancel' : 'Edit Profile'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to logout?')) {
+                    logout();
+                  }
+                }}
+                className="flex items-center space-x-2 px-4 py-2 rounded-md font-semibold bg-gray-600 hover:bg-gray-700 text-white transition-colors"
+              >
+                <SettingsIcon size={16} />
+                <span>Logout</span>
+              </button>
+            </div>
           </div>
         </div>
 

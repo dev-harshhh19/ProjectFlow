@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, ArrowLeft, X } from 'lucide-react';
+import Logger from '../utils/logger';
 import TaskList from '../TaskList';
 import NewTaskForm from '../NewTaskForm';
 import { useAuth } from '../context/AuthContext';
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:4000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
 function ProjectDetails() {
   const { id } = useParams();
@@ -20,10 +21,10 @@ function ProjectDetails() {
   const { token } = useAuth();
 
   useEffect(() => {
-    console.log('ProjectDetails - ID from useParams:', id, 'Type:', typeof id);
+    Logger.debug('ProjectDetails - ID from useParams:', id, 'Type:', typeof id);
     if (!token) return;
     if (!id || id === 'undefined') {
-      console.error('Invalid project ID:', id);
+      Logger.error('Invalid project ID:', id);
       setError('Invalid project ID');
       setLoading(false);
       return;
@@ -31,7 +32,7 @@ function ProjectDetails() {
 
     setLoading(true);
     setError(null);
-    console.log('Making request to:', `${API_BASE_URL}/api/projects/${id}`);
+    Logger.debug('Making request to:', `${API_BASE_URL}/api/projects/${id}`);
     fetch(`${API_BASE_URL}/api/projects/${id}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
