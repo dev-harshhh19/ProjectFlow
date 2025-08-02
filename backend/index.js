@@ -74,7 +74,7 @@ const authenticateToken = async (req, res, next) => {
 // CORS configuration - Allow all origins in development
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
-    ? process.env.FRONTEND_URL || 'https://your-frontend-domain.com'
+    ? 'https://project-flow-je8bqj9iy-dev-harshhh18s-projects.vercel.app'
     : ['http://localhost:3000', 'http://127.0.0.1:3000'], // Allow both localhost variants
   credentials: true,
   optionsSuccessStatus: 200,
