@@ -7,7 +7,7 @@ import Dashboard from '../Dashboard';
 global.fetch = jest.fn();
 
 // Mock the auth context
-jest.mock('../../context/AuthContext', () => ({
+jest.mock('../../../../context/AuthContext', () => ({
   ...jest.requireActual('../../context/AuthContext'),
   useAuth: () => ({
     token: 'mock-token',
