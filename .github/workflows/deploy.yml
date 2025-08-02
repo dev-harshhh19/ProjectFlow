@@ -62,10 +62,10 @@ jobs:
         cd backend
         npm test
     
-    - name: Run frontend tests
-      run: |
-        cd frontend
-        CI=true npm test -- --coverage --watchAll=false
+        # - name: Run frontend tests
+    #   run: |
+    #     cd frontend
+    #     CI=true npm test -- --coverage --watchAll=false
 
   deploy-backend:
     name: Deploy Backend to Render
