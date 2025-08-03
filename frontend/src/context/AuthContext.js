@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      Logger.debug('Auth state change event:', event, 'Session:', session);
+      Logger.debug('AuthContext - Auth state change event:', event, 'Session:', session);
       if (session) {
         setUser(session.user);
         setToken(session.access_token);
@@ -46,6 +46,7 @@ export const AuthProvider = ({ children }) => {
 
     // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
+      Logger.debug('AuthContext - Initial session check. Session:', session);
       if (session) {
         setUser(session.user);
         setToken(session.access_token);
@@ -69,6 +70,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Use our backend login endpoint instead of direct Supabase
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+      Logger.debug('AuthContext - Attempting login via backend:', `${apiUrl}/api/login`);
       const response = await fetch(`${apiUrl}/api/login`, {
         method: 'POST',
         headers: {
@@ -79,15 +81,16 @@ export const AuthProvider = ({ children }) => {
       
       if (!response.ok) {
         const errorData = await response.json();
+        Logger.error('AuthContext - Login failed on backend:', errorData);
         throw new Error(errorData.message || 'Login failed');
       }
       
-      
-      
+      Logger.debug('AuthContext - Backend login successful. Waiting for onAuthStateChange...');
       // Supabase's onAuthStateChange will handle setting user, token, and localStorage
       setLoading(false);
       navigate('/dashboard');
     } catch (error) {
+      Logger.error('AuthContext - Login process error:', error);
       setLoading(false);
       throw error;
     }
