@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error(errorData.message || 'Login failed');
       }
       
-      const data = await response.json();
+      
       
       // Supabase's onAuthStateChange will handle setting user, token, and localStorage
       setLoading(false);
