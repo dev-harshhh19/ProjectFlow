@@ -1,56 +1,55 @@
 # ProjectFlow
 
-A full-stack project management application designed for efficient project tracking, task management, and team collaboration.
+A modern, full-stack project and task management system designed to streamline workflows and visualize team progress in real time. **ProjectFlow** helps individuals and teams stay organized through intuitive interfaces and powerful backend logic.
 
-## Core Features
 
-- **Project Tracking**: Comprehensive management of projects, including status (Active, On Hold, Completed), priority levels, and deadline oversight.
-- **Task Management**: Detailed task creation and tracking with assignment capabilities, priority settings, status updates (To Do, In Progress, Review, Completed), and time estimation.
-- **Dashboard & Analytics**: A centralized overview providing key project metrics, real-time progress statistics, and visual indicators for critical items.
-- **Team Collaboration**: Facilitates shared workspaces and collective progress tracking for effective teamwork.
-- **Responsive Design**: An intuitive and clean user interface optimized for seamless experience across desktop and mobile devices.
+---
 
-## Technology Stack
+## Live Demo
 
-This application is built upon a robust, full-stack architecture:
+[![Live Demo](https://img.shields.io/badge/Live%20Preview-00C853?style=flat-square&logo=vercel&logoColor=white)](https://project-flow-two.vercel.app)
+[![Developer Profile](https://img.shields.io/badge/More%20Projects-2962FF?style=flat-square&logo=github&logoColor=white)](https://github.com/dev-harshhh19)
 
-- **Frontend**:
-  - React
-  - React Router
-  - Tailwind CSS
+---
 
-- **Backend**:
-  - Node.js
-  - Express.js
-  - PostgreSQL
+## Stack
 
-- **Authentication**:
-  - JSON Web Tokens (JWT)
-  - Supabase Auth
+| Layer        | Technology                          |
+|--------------|--------------------------------------|
+| Frontend     | React, React Router, Tailwind CSS    |
+| Backend      | Node.js, Express.js                  |
+| Database     | PostgreSQL                           |
+| Auth System  | Supabase Auth (JWT)                  |
+| Deployment   | Vercel (Frontend), Render (Backend) |
 
-## API Endpoints
+---
 
-The backend exposes a RESTful API for interaction with project and task resources.
+## Features
 
-### Projects API
+- Secure user authentication and session management
+- Create, update, delete projects and associated tasks
+- Real-time project statistics and analytics dashboard
+- Fully responsive layout across desktop and mobile
+- REST API integration (privately maintained)
+- Dashboard for tracking task status and project metrics
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/projects` | Retrieves all projects. |
-| `POST` | `/api/projects` | Creates a new project. |
-| `GET` | `/api/projects/:id` | Fetches a single project by its ID. |
-| `PUT` | `/api/projects/:id` | Updates an existing project. |
-| `DELETE` | `/api/projects/:id` | Deletes a project. |
-| `GET` | `/api/projects/:id/stats` | Provides detailed statistics for a specific project. |
+---
 
-### Tasks API
+## UI Preview
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `POST` | `/api/tasks` | Creates a new task. |
-| `PUT` | `/api/tasks/:id` | Updates an existing task. |
-| `DELETE` | `/api/tasks/:id` | Deletes a task. |
+Screenshots, GIFs, or walkthrough videos will be available soon.
 
-## License
+---
 
-This project is licensed under the MIT License. Refer to the `LICENSE` file for complete details.
+## Status
+
+This project is actively maintained and deployed. Feedback, feature requests, and collaboration inquiries are welcome.
+
+---
+
+## Author
+
+Built by [Harshad Nikam](https://github.com/dev-harshhh19)  
+Second Year Computer Science Student  
+Connect on [LinkedIn](https://www.linkedin.com/in/harshad-nikam06/)
+
