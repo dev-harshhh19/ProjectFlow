@@ -74,8 +74,8 @@ const authenticateToken = async (req, res, next) => {
 // CORS configuration - Allow all origins in development
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
-    ? 'https://project-flow-je8bqj9iy-dev-harshhh18s-projects.vercel.app'
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'], // Allow both localhost variants
+    ? ['https://project-flow-je8bqj9iy-dev-harshhh18s-projects.vercel.app', 'https://projectflow-cvcv.onrender.com']
+    : '*', // Allow all origins in development for easier local testing
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
