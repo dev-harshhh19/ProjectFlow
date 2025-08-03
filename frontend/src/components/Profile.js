@@ -6,7 +6,7 @@ import Header from './Header';
 import Footer from './Footer';
 
 function Profile() {
-  const { user, updateProfile, logout } = useAuth();
+  const { user, updateProfile, logout, maintenanceMessage } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
@@ -216,6 +216,12 @@ function Profile() {
         {message.text && (
           <div className={`mb-6 p-4 rounded-md ${message.type === 'success' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400'}`}>
             {message.text}
+          </div>
+        )}
+
+        {maintenanceMessage && (
+          <div className="mb-6 p-4 rounded-md bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400">
+            {maintenanceMessage}
           </div>
         )}
 

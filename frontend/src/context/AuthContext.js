@@ -14,12 +14,29 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [maintenanceMessage, setMaintenanceMessage] = useState(null); // New state for maintenance message
   const navigate = useNavigate();
 
   const updateProfile = async (updates) => {
-    const { data, error } = await supabase.auth.updateUser({ data: updates });
-    if (error) throw error;
-    setUser(data.user);
+    try {
+      const { data, error } = await supabase.auth.updateUser({ data: updates });
+      if (error) {
+        if (error.message && error.message.includes('Auth session missing!')) {
+          Logger.warn('Auth session missing during profile update. Displaying maintenance message.');
+          setMaintenanceMessage('Profile update is temporarily under maintenance. Please try again later.');
+          return { success: false, message: 'Under maintenance' };
+        } else {
+          throw error;
+        }
+      }
+      setUser(data.user);
+      setMaintenanceMessage(null); // Clear message on success
+      return { success: true, user: data.user };
+    } catch (error) {
+      Logger.error('Error updating profile:', error);
+      setMaintenanceMessage('An unexpected error occurred during profile update.');
+      throw error; // Re-throw other errors
+    }
   };
 
   const deleteAccount = async () => {
@@ -147,7 +164,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, updateProfile, deleteAccount }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, updateProfile, deleteAccount, maintenanceMessage }}>
       {children}
     </AuthContext.Provider>
   );
