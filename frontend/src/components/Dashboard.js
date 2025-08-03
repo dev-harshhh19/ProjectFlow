@@ -126,6 +126,7 @@ function Dashboard() {
       });
   };
   const handleProjectClick = (id) => {
+    Logger.debug('Dashboard - Navigating to project with ID:', id);
     navigate(`/projects/${id}`);
   };
 
