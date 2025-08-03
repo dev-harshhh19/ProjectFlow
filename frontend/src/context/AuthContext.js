@@ -45,9 +45,12 @@ export const AuthProvider = ({ children }) => {
         if (response.ok) {
           // Token is valid, keep the session
           setToken(existingToken);
-          // We'll need to get user info somehow - for now set a basic user object
-          // In a real app, you might have a /api/user endpoint to get current user info
-          setUser({ email: 'authenticated' }); // Placeholder - you might want to improve this
+          // The backend's authenticateToken middleware now sets req.user from Supabase
+          // We don't need to fetch user info separately here, but we can set a basic user object
+          // if needed for immediate UI updates before a full user object is available.
+          // For now, we'll assume the backend correctly authenticates and the user object
+          // will be populated on subsequent requests or a dedicated user info endpoint.
+          // setUser({ email: 'authenticated' }); // Removed placeholder
         } else {
           // Token is invalid, clear it
           localStorage.removeItem('jwtToken');
@@ -90,10 +93,10 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
       
       // Add session_token to user object for easy access
-      const userWithToken = { ...data.user, session_token: data.session_token };
+      const userWithToken = { ...data.user, access_token: data.access_token };
       setUser(userWithToken);
-      setToken(data.session_token); // Use our lightweight session token
-      localStorage.setItem('jwtToken', data.session_token);
+      setToken(data.access_token); // Use Supabase access token
+      localStorage.setItem('jwtToken', data.access_token);
       setLoading(false);
       navigate('/dashboard');
     } catch (error) {
@@ -106,7 +109,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     
     try {
-      // Try to call our backend logout endpoint first
+      // Call backend logout endpoint
       const currentToken = localStorage.getItem('jwtToken');
       if (currentToken) {
         try {
@@ -124,24 +127,22 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      // Try Supabase logout, but don't fail if it has network issues
-      try {
-        await supabase.auth.signOut();
-      } catch (supabaseError) {
-        Logger.warn('Supabase logout failed:', supabaseError.message);
-        // Continue with local cleanup even if Supabase fails
+      // Supabase logout (client-side)
+      const { error: supabaseSignOutError } = await supabase.auth.signOut();
+      if (supabaseSignOutError) {
+        Logger.warn('Supabase client-side logout failed:', supabaseSignOutError.message);
       }
+
     } catch (error) {
       Logger.warn('Logout process encountered issues:', error.message);
-      // Continue with local cleanup regardless of errors
+    } finally {
+      // Always perform local cleanup
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('jwtToken');
+      setLoading(false);
+      navigate('/login');
     }
-    
-    // Always perform local cleanup
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('jwtToken');
-    setLoading(false);
-    navigate('/login');
   };
 
   return (
