@@ -92,17 +92,6 @@ export const AuthProvider = ({ children }) => {
       
       const data = await response.json();
       
-      // Set Supabase session directly
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token || null, // Supabase might not always return refresh_token on signInWithPassword
-      });
-
-      if (sessionError) {
-        Logger.error('Supabase setSession error:', sessionError);
-        throw new Error('Failed to set Supabase session');
-      }
-
       const userWithToken = { ...data.user, access_token: data.access_token };
       setUser(userWithToken);
       setToken(data.access_token); // Use Supabase access token
