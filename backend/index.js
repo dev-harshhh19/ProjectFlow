@@ -28,47 +28,38 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 // Simple session store (in production, use Redis or database)
-const sessions = new Map();
 
-// Generate a simple session ID
-function generateSessionId() {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
 
 // Middleware to protect routes using session-based auth
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const sessionToken = authHeader && authHeader.split(' ')[1];
+  const token = authHeader && authHeader.split(' ')[1];
 
-  console.log('Auth Middleware: Received session token:', sessionToken ? 'Session token present' : 'No session token');
-
-  if (!sessionToken) {
-    console.log('Auth Middleware: No session token provided, sending 401.');
-    return res.sendStatus(401);
+  if (!token) {
+    return res.status(401).json({ message: 'Authentication token required' });
   }
 
-  // Check if session exists
-  const session = sessions.get(sessionToken);
-  if (!session) {
-    console.log('Auth Middleware: Invalid session token, sending 403.');
-    return res.status(403).json({ message: 'Invalid session token' });
+  if (!supabase) {
+    return res.status(503).json({ 
+      error: 'Authentication service unavailable', 
+      message: 'Supabase configuration is missing.' 
+    });
   }
 
-  // Check if session has expired (1 hour expiry)
-  if (Date.now() > session.expiresAt) {
-    console.log('Auth Middleware: Session expired, removing from store.');
-    sessions.delete(sessionToken);
-    return res.status(403).json({ message: 'Session expired' });
-  }
+  try {
+    const { data, error } = await supabase.auth.getUser(token);
 
-  console.log('Auth Middleware: Valid session for user:', session.user.email);
-  req.user = session.user;
-  req.sessionToken = sessionToken;
-  
-  // Extend session expiry on each request
-  session.expiresAt = Date.now() + (60 * 60 * 1000); // 1 hour from now
-  
-  next();
+    if (error) {
+      console.error('Supabase auth error:', error.message);
+      return res.status(403).json({ message: 'Invalid or expired token', error: error.message });
+    }
+
+    req.user = data.user;
+    next();
+  } catch (error) {
+    console.error('Error in authentication middleware:', error);
+    res.status(500).json({ message: 'Internal server error during authentication' });
+  }
 };
 
 // CORS configuration - Allow all origins in development
@@ -223,23 +214,12 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ message: error.message });
     }
 
-    // Create a session for the user
-    const sessionToken = generateSessionId();
-    const sessionData = {
-      user: data.user,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + (60 * 60 * 1000), // 1 hour from now
-      supabaseToken: data.session.access_token // Keep original token for Supabase operations
-    };
-    
-    sessions.set(sessionToken, sessionData);
-    
-    console.log(`Created session ${sessionToken} for user: ${data.user.email}`);
-
     res.status(200).json({ 
       message: 'Login successful', 
       user: data.user,
-      session_token: sessionToken // Return our lightweight session token instead
+      access_token: data.session.access_token, // Return Supabase access token
+      expires_in: data.session.expires_in,
+      token_type: data.session.token_type
     });
   } catch (error) {
     console.error('Error logging in user:', error);
@@ -250,32 +230,26 @@ app.post('/api/login', async (req, res) => {
 // User Logout endpoint - Destroys session
 app.post('/api/logout', authenticateToken, async (req, res) => {
   try {
-    const sessionToken = req.sessionToken;
+    if (!supabase) {
+      return res.status(503).json({ 
+        error: 'Authentication service unavailable', 
+        message: 'Supabase configuration is missing.' 
+      });
+    }
     
-    // Remove session from store
-    const session = sessions.get(sessionToken);
-    if (session) {
-      sessions.delete(sessionToken);
-      console.log(`Destroyed session ${sessionToken} for user: ${session.user.email}`);
-      
-      // Optionally try to sign out from Supabase using the original token
-      try {
-        if (session.supabaseToken) {
-          await supabase.auth.signOut(session.supabaseToken);
-        }
-      } catch (supabaseError) {
-        console.warn('Supabase logout warning:', supabaseError.message);
-        // Continue - this is not critical
-      }
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error('Supabase logout error:', error.message);
+      return res.status(500).json({ message: 'Failed to logout', error: error.message });
     }
 
     res.status(200).json({ message: 'Logout successful' });
   } catch (error) {
     console.error('Error during logout:', error);
-    // Return success even if there are issues, as logout should always succeed from user perspective
-    res.status(200).json({ 
-      message: 'Logout completed', 
-      warning: 'Some cleanup operations may have failed'
+    res.status(500).json({ 
+      message: 'An unexpected error occurred during logout',
+      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -284,12 +258,8 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
 app.delete('/api/account', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const sessionToken = req.sessionToken;
-    const session = sessions.get(sessionToken);
     
     console.log(`[ACCOUNT_DELETE] Request received for user: ${req.user.email} (${userId})`);
-    console.log(`[ACCOUNT_DELETE] Session token: ${sessionToken ? 'Present' : 'Missing'}`);
-    console.log(`[ACCOUNT_DELETE] Session data: ${session ? 'Valid' : 'Invalid'}`);
     
     // Start database transaction to ensure data consistency
     console.log(`[ACCOUNT_DELETE] Attempting database connection...`);
@@ -337,24 +307,21 @@ app.delete('/api/account', authenticateToken, async (req, res) => {
       client.release();
     }
     
-    // Remove session from store
-    if (session) {
-      sessions.delete(sessionToken);
-      console.log(`Destroyed session ${sessionToken} for deleted user`);
-    }
-    
     // Delete user from Supabase Auth (this will permanently delete the user account)
     try {
-      if (session && session.supabaseToken) {
-        // Use admin client to delete user from Supabase
-        const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
-        
-        if (deleteError) {
-          console.error('Supabase user deletion error:', deleteError);
-          // Continue - user data is already cleaned up from our database
-        } else {
-          console.log(`Successfully deleted user ${userId} from Supabase Auth`);
-        }
+      if (!supabase) {
+        return res.status(503).json({ 
+          error: 'Authentication service unavailable', 
+          message: 'Supabase configuration is missing.' 
+        });
+      }
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (deleteError) {
+        console.error('Supabase user deletion error:', deleteError);
+        // Continue - user data is already cleaned up from our database
+      } else {
+        console.log(`Successfully deleted user ${userId} from Supabase Auth`);
       }
     } catch (supabaseError) {
       console.error('Supabase deletion error:', supabaseError);
