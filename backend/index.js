@@ -11,7 +11,7 @@ const app = express();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false // Use SSL if DATABASE_URL is present
 });
 
 // Initialize Supabase Client with error handling
@@ -58,7 +58,11 @@ const authenticateToken = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Error in authentication middleware:', error);
-    res.status(500).json({ message: 'Internal server error during authentication' });
+    // Check if the error is specifically from Supabase auth
+    if (error.message && (error.message.includes('invalid jwt') || error.message.includes('expired jwt') || error.message.includes('invalid claims'))) {
+      return res.status(403).json({ message: 'Invalid or expired token', error: error.message });
+    }
+    res.status(500).json({ message: 'Internal server error during authentication', error: error.message });
   }
 };
 
@@ -214,6 +218,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ message: error.message });
     }
 
+    console.log('Supabase access token received:', data.session.access_token);
     res.status(200).json({ 
       message: 'Login successful', 
       user: data.user,
@@ -351,6 +356,10 @@ app.delete('/api/account', authenticateToken, async (req, res) => {
 // API Routes (Protected)
 app.get('/api/projects', authenticateToken, async (req, res) => {
   try {
+    if (!req.user || !req.user.id) {
+      console.error('Authentication failed: req.user or req.user.id is missing.');
+      return res.status(401).json({ message: 'Authentication required or failed' });
+    }
     const userId = req.user.id; // Get user ID from authenticated token
     console.log('Fetching projects for user:', userId);
     
@@ -381,8 +390,9 @@ app.get('/api/projects', authenticateToken, async (req, res) => {
     console.log(`Found ${projects.length} projects for user ${userId}`);
     res.json(projects);
   } catch (error) {
-    console.error('Error fetching projects:', error);
-    res.status(500).json({ error: 'Failed to fetch projects' });
+    console.error('Error fetching projects:', error.message);
+    console.error('Error details:', error);
+    res.status(500).json({ error: 'Failed to fetch projects', details: error.message });
   }
 });
 
