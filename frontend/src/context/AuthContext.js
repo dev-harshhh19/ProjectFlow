@@ -30,7 +30,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      Logger.debug('Auth state change event:', event, 'Session:', session);
       if (session) {
         setUser(session.user);
         setToken(session.access_token);
