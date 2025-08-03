@@ -30,36 +30,45 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setUser(session.user);
-        setToken(session.access_token);
-        localStorage.setItem('jwtToken', session.access_token);
-      } else {
+    // Check for existing session token in localStorage on mount
+    const existingToken = localStorage.getItem('jwtToken');
+    if (existingToken) {
+      // Validate the session token with our backend
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+      fetch(`${apiUrl}/api/projects`, {
+        headers: {
+          'Authorization': `Bearer ${existingToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          // Token is valid, keep the session
+          setToken(existingToken);
+          // The backend's authenticateToken middleware now sets req.user from Supabase
+          // We don't need to fetch user info separately here, but we can set a basic user object
+          // if needed for immediate UI updates before a full user object is available.
+          // For now, we'll assume the backend correctly authenticates and the user object
+          // will be populated on subsequent requests or a dedicated user info endpoint.
+          // setUser({ email: 'authenticated' }); // Removed placeholder
+        } else {
+          // Token is invalid, clear it
+          localStorage.removeItem('jwtToken');
+          setUser(null);
+          setToken(null);
+        }
+        setLoading(false);
+      })
+      .catch(error => {
+        Logger.warn('Session validation failed:', error.message);
+        localStorage.removeItem('jwtToken');
         setUser(null);
         setToken(null);
-        localStorage.removeItem('jwtToken');
-      }
+        setLoading(false);
+      });
+    } else {
       setLoading(false);
-    });
-
-    // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setUser(session.user);
-        setToken(session.access_token);
-        localStorage.setItem('jwtToken', session.access_token);
-      } else {
-        setUser(null);
-        setToken(null);
-        localStorage.removeItem('jwtToken');
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      authListener.unsubscribe();
-    };
+    }
   }, []);
 
   const login = async (email, password) => {
@@ -83,7 +92,12 @@ export const AuthProvider = ({ children }) => {
       
       
       
-      // Supabase's onAuthStateChange will handle setting user, token, and localStorage
+      const data = await response.json();
+      
+      const userWithToken = { ...data.user, access_token: data.access_token };
+      setUser(userWithToken);
+      setToken(data.access_token); // Use Supabase access token
+      localStorage.setItem('jwtToken', data.access_token);
       setLoading(false);
       navigate('/dashboard');
     } catch (error) {
